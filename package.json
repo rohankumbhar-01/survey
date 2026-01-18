@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "knockout": "3.5.1",
+    "survey-analytics": "^2.5.6",
+    "survey-core": "^2.5.6",
+    "survey-creator-core": "^2.5.6",
+    "survey-creator-knockout": "1.12.58",
+    "survey-creator-vue": "^2.5.6",
+    "survey-knockout-ui": "1.12.58",
+    "survey-vue3-ui": "^2.5.6",
+    "vue": "3.5.26"
+  }
+}

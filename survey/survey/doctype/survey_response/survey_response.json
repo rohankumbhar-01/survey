@@ -1,0 +1,99 @@
+{
+    "actions": [],
+    "allow_rename": 1,
+    "creation": "2024-01-16 10:00:00.000000",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+        "survey_form",
+        "responded_on",
+        "respondent_user",
+        "cb_1",
+        "respondent_ip",
+        "completion_time_sec",
+        "section_details",
+        "user_agent",
+        "section_response",
+        "response_json"
+    ],
+    "fields": [
+        {
+            "fieldname": "survey_form",
+            "fieldtype": "Link",
+            "label": "Survey Form",
+            "options": "Survey Form",
+            "reqd": 1
+        },
+        {
+            "fieldname": "responded_on",
+            "fieldtype": "Datetime",
+            "label": "Responded On"
+        },
+        {
+            "fieldname": "respondent_user",
+            "fieldtype": "Link",
+            "label": "Respondent User",
+            "options": "User"
+        },
+        {
+            "fieldname": "cb_1",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "respondent_ip",
+            "fieldtype": "Data",
+            "label": "Respondent IP"
+        },
+        {
+            "fieldname": "completion_time_sec",
+            "fieldtype": "Int",
+            "label": "Completion Time (sec)"
+        },
+        {
+            "fieldname": "section_details",
+            "fieldtype": "Section Break",
+            "label": "Details"
+        },
+        {
+            "fieldname": "user_agent",
+            "fieldtype": "Small Text",
+            "label": "User Agent"
+        },
+        {
+            "fieldname": "section_response",
+            "fieldtype": "Section Break",
+            "label": "Response JSON"
+        },
+        {
+            "fieldname": "response_json",
+            "fieldtype": "Code",
+            "label": "Response JSON",
+            "options": "JSON"
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "links": [],
+    "modified": "2024-01-16 10:00:00.000000",
+    "modified_by": "Administrator",
+    "module": "Survey",
+    "name": "Survey Response",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "states": []
+}

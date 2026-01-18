@@ -70,6 +70,10 @@ app_license = "mit"
 # automatically create page for each record of this doctype
 # website_generators = ["Web Page"]
 
+website_route_rules = [
+	{"from_route": "/survey/run/<name>", "to_route": "survey/run"},
+]
+
 # Jinja
 # ----------
 

@@ -1,0 +1,125 @@
+{
+    "actions": [],
+    "allow_rename": 1,
+    "autoname": "format:SRV-{title}-{####}",
+    "creation": "2024-01-16 10:00:00.000000",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+        "title",
+        "description",
+        "status",
+        "is_active",
+        "cb_1",
+        "version",
+        "published_on",
+        "created_by",
+        "cb_2",
+        "response_count",
+        "public_url",
+        "section_survey",
+        "survey_json"
+    ],
+    "fields": [
+        {
+            "fieldname": "title",
+            "fieldtype": "Data",
+            "label": "Title",
+            "reqd": 1
+        },
+        {
+            "fieldname": "description",
+            "fieldtype": "Small Text",
+            "label": "Description"
+        },
+        {
+            "default": "Draft",
+            "fieldname": "status",
+            "fieldtype": "Select",
+            "label": "Status",
+            "options": "Draft\nPublished\nClosed"
+        },
+        {
+            "default": "1",
+            "fieldname": "is_active",
+            "fieldtype": "Check",
+            "label": "Is Active"
+        },
+        {
+            "fieldname": "cb_1",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "version",
+            "fieldtype": "Data",
+            "label": "Version"
+        },
+        {
+            "fieldname": "published_on",
+            "fieldtype": "Datetime",
+            "label": "Published On",
+            "read_only": 1
+        },
+        {
+            "fieldname": "created_by",
+            "fieldtype": "Link",
+            "label": "Created By",
+            "options": "User",
+            "read_only": 1
+        },
+        {
+            "fieldname": "cb_2",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "0",
+            "fieldname": "response_count",
+            "fieldtype": "Int",
+            "label": "Response Count",
+            "read_only": 1
+        },
+        {
+            "fieldname": "public_url",
+            "fieldtype": "Data",
+            "label": "Public URL",
+            "read_only": 1
+        },
+        {
+            "fieldname": "section_survey",
+            "fieldtype": "Section Break",
+            "label": "Survey Definition"
+        },
+        {
+            "fieldname": "survey_json",
+            "fieldtype": "Code",
+            "label": "Survey JSON",
+            "options": "JSON"
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "links": [],
+    "modified": "2024-01-16 10:00:00.000000",
+    "modified_by": "Administrator",
+    "module": "Survey",
+    "name": "Survey Form",
+    "naming_rule": "Expression",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "states": []
+}

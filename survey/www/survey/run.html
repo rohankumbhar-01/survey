@@ -1,0 +1,120 @@
+{% extends "templates/web.html" %}
+
+{% block content %}
+<!-- Forced CSS loading to bypass header stripping -->
+<link rel="stylesheet" href="https://unpkg.com/survey-core@2.5.6/survey-core.min.css">
+
+<style>
+    /* Ensure the survey fills the container and respects theme styles */
+    #surveyElement {
+        width: 100%;
+        min-height: 80vh;
+        background-color: transparent !important;
+    }
+
+    /* Fix for large logos in unstyled state */
+    .sd-logo__image {
+        max-width: 200px;
+        height: auto;
+    }
+
+    /* Ensure the body and main page containers don't restrict the survey theme */
+    .page-content,
+    .container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .web-footer,
+    .navbar {
+        display: block;
+        /* Keep footer/nav but let survey take the rest */
+    }
+</style>
+
+<div id="survey-wrapper" style="padding: 20px; background-color: #f3f3f3;">
+    <div id="surveyElement"></div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/survey-core@2.5.6/survey.core.min.js"></script>
+<script src="https://unpkg.com/survey-core@2.5.6/themes/index.min.js"></script>
+<script src="https://unpkg.com/survey-vue3-ui@2.5.6/survey-vue3-ui.umd.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const surveyId = "{{ survey_id }}";
+
+        if (!window.Vue || !window.Survey || !window.SurveyVue) {
+            console.error("SurveyJS v2 libraries failed to load.");
+            return;
+        }
+
+        fetch(`/api/method/survey.survey.api.survey.get_survey_form?survey_id=${surveyId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.message) {
+                    const surveyData = data.message.survey_json;
+
+                    // If the theme is stored as a name in a separate field, we might need a fallback.
+                    // But usually it's inside the JSON.
+                    const survey = new Survey.Model(surveyData);
+
+                    // Re-apply theme if it's in the JSON
+                    if (surveyData.theme) {
+                        console.log("Runner: Applying saved theme", surveyData.theme);
+                        let themeToApply = surveyData.theme;
+                        // If it's a name, try to find it in the global registry
+                        if (typeof themeToApply === 'string' && window.SurveyTheme) {
+                            themeToApply = window.SurveyTheme[themeToApply] ||
+                                window.SurveyTheme.DefaultV2 ||
+                                themeToApply;
+                        }
+                        survey.applyTheme(themeToApply);
+                    } else {
+                        // Default fallback to make it look like v2
+                        const fallback = window.SurveyTheme ? (window.SurveyTheme.DefaultV2 || window.SurveyTheme.DefaultLight) : {};
+                        survey.applyTheme(fallback);
+                    }
+
+                    survey.onComplete.add(function (sender) {
+                        fetch('/api/method/survey.survey.api.survey.submit_survey_response', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Frappe-CSRF-Token': (window.frappe ? frappe.csrf_token : "")
+                            },
+                            body: JSON.stringify({
+                                survey_id: surveyId,
+                                response_json: sender.data
+                            })
+                        }).then(res => res.json())
+                            .then(resp => {
+                                console.log("Submit Response:", resp);
+                            });
+                    });
+
+                    const app = Vue.createApp({
+                        setup() {
+                            return { survey };
+                        },
+                        template: '<SurveyComponent :model="survey" />'
+                    });
+
+                    const component = SurveyVue.SurveyComponent || SurveyVue.Survey;
+                    app.component("SurveyComponent", component);
+                    app.mount("#surveyElement");
+
+                    // Force white background of common Frappe classes to transparent
+                    setTimeout(() => {
+                        const wrapper = document.getElementById('survey-wrapper');
+                        if (survey.theme && survey.theme.cssVariables) {
+                            wrapper.style.backgroundColor = survey.theme.cssVariables['--sjs-general-backcolor'] || '#f3f3f3';
+                        }
+                    }, 100);
+                }
+            });
+    });
+</script>
+{% endblock %}
