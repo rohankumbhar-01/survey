@@ -13,15 +13,28 @@
 		"brace-style": "off",
 		"no-mixed-spaces-and-tabs": "off",
 		"no-useless-escape": "off",
-		"space-unary-ops": ["error", { "words": true }],
+		"space-unary-ops": [
+			"error",
+			{
+				"words": true
+			}
+		],
 		"linebreak-style": "off",
-		"quotes": ["off"],
+		"quotes": [
+			"off"
+		],
 		"semi": "off",
 		"camelcase": "off",
 		"no-unused-vars": "off",
-		"no-console": ["warn"],
-		"no-extra-boolean-cast": ["off"],
-		"no-control-regex": ["off"],
+		"no-console": [
+			"warn"
+		],
+		"no-extra-boolean-cast": [
+			"off"
+		],
+		"no-control-regex": [
+			"off"
+		]
 	},
 	"root": true,
 	"globals": {
@@ -119,6 +132,14 @@
 		"after": true,
 		"qz": true,
 		"localforage": true,
-		"extend_cscript": true
+		"extend_cscript": true,
+		"Survey": true,
+		"SurveyVue": true,
+		"SurveyCreatorCore": true,
+		"SurveyTheme": true,
+		"SurveyAnalytics": true,
+		"Plotly": true,
+		"survey_id": true,
+		"survey_v2_loaded": true
 	}
 }
