@@ -279,19 +279,30 @@ function render_builder_v2($container, survey_id) {
                     if (creator.toolbox) creator.toolbox.readOnly = false;
                 };
 
-                // Official V2 Event for theme changes in the UI
-                creator.onThemeChanged.add((sender, options) => {
-                    console.log("Theme Changed via Designer:", sender.theme);
-                    if (creator.themeEditor && creator.themeEditor.survey) {
-                        creator.themeEditor.survey.applyTheme(sender.theme);
-                    }
-                });
+                // Safely handle events to avoid "Cannot read properties of undefined (reading 'add')"
+                if (creator.onThemeChanged) {
+                    creator.onThemeChanged.add((sender, options) => {
+                        if (creator.themeEditor && creator.themeEditor.survey) {
+                            creator.themeEditor.survey.applyTheme(sender.theme);
+                        }
+                    });
+                } else {
+                    // Fallback for V2: monitor theme property changes
+                    creator.onPropertyChanged.add((sender, options) => {
+                        if (options.name === "theme") {
+                            if (creator.themeEditor && creator.themeEditor.survey) {
+                                creator.themeEditor.survey.applyTheme(options.newValue);
+                            }
+                        }
+                    });
+                }
 
-                // Re-unlock on tab changes
-                creator.onActiveTabChanged.add((sender, options) => {
-                    setTimeout(unlock, 100);
-                    setTimeout(unlock, 1000);
-                });
+                if (creator.onActiveTabChanged) {
+                    creator.onActiveTabChanged.add((sender, options) => {
+                        setTimeout(unlock, 100);
+                        setTimeout(unlock, 1000);
+                    });
+                }
 
                 // Init Theme
                 let initialTheme = data.theme;
