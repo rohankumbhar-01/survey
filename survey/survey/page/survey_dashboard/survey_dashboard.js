@@ -27,8 +27,10 @@ frappe.pages['survey_dashboard'].on_page_load = function (wrapper) {
     load_assets_sequentially(assets, function () {
         // Compatibility Fix: SurveyJS v2 UMD sometimes expects SurveyVue to be available
         // on window for the CreatorVue to attach its ComponentFactory.
+        window.Survey = window.Survey || window.surveyCore || {};
         window.SurveyVue = window.SurveyVue || window.Survey;
-        window.Survey = window.Survey || window.SurveyVue;
+        window.SurveyCreatorCore = window.SurveyCreatorCore || window.surveyCreatorCore || {};
+        window.SurveyTheme = window.SurveyTheme || window.surveyTheme || {};
 
         window.survey_v2_loaded = true;
         handle_routing(wrapper);
@@ -111,80 +113,19 @@ function render_builder_v2($container, survey_id) {
         return;
     }
 
-    // 1. Discover all themes from 2.5.6 bundle
-    let allThemes = [];
-
-    // Official SurveyJS v2 themes are usually in SurveyTheme or Survey.Themes
-    const sources = [window.SurveyTheme, window.Survey?.Themes, window.SurveyCreatorCore?.PredefinedThemes];
-
-    function scanForThemes(obj) {
-        if (!obj || typeof obj !== 'object') return;
-
-        // Handle PredefinedThemes structure specifically
-        if (Array.isArray(obj.themes)) {
-            obj.themes.forEach(t => {
-                if (t.themeName && t.cssVariables) {
-                    allThemes.push(t);
-                }
-            });
-        }
-
-        Object.keys(obj).forEach(key => {
-            const item = obj[key];
-            if (item && typeof item === 'object' && item.themeName && item.cssVariables) {
-                const isDuplicate = allThemes.some(t => t.themeName === item.themeName && t.colorPalette === item.colorPalette);
-                if (!isDuplicate) {
-                    allThemes.push(item);
-                }
-            } else if (key === 'default' || (typeof item === 'object' && item !== obj)) {
-                // Avoid infinite recursion and deep scan for themes
-                if (key !== 'prototype' && key !== '__proto__') {
-                    // limit depth or structure
-                }
-            }
-        });
+    // 1. Official Theme Registration (SurveyJS v2)
+    if (window.SurveyCreatorCore && window.SurveyCreatorCore.registerSurveyTheme && window.SurveyTheme) {
+        console.log("Registering themes via official SurveyCreatorCore.registerSurveyTheme...");
+        window.SurveyCreatorCore.registerSurveyTheme(window.SurveyTheme);
     }
 
-    sources.forEach(src => {
-        if (src) scanForThemes(src);
-    });
-
-    // Final dedupe by name + palette (to keep Light/Dark variants)
-    const uniqueThemes = [];
-    const seenKeys = new Set();
-    allThemes.forEach(t => {
-        const key = t.themeName + "-" + (t.colorPalette || "light");
-        if (!seenKeys.has(key)) {
-            uniqueThemes.push(t);
-            seenKeys.add(key);
-        }
-    });
-
-    // If no themes found, try to find the modern Default V2 as a hard fallback
-    if (uniqueThemes.length === 0 && window.SurveyTheme && (window.SurveyTheme.DefaultV2 || window.SurveyTheme.Default)) {
-        uniqueThemes.push(window.SurveyTheme.DefaultV2 || window.SurveyTheme.Default);
-    }
-
-    console.log(`SurveyJS 2.5.6: Discovered ${uniqueThemes.length} unique themes.`);
-
-
-    // 2. Register Themes Globally
-    const creatorCore = window.SurveyCreatorCore;
-    const surveyCore = window.Survey;
-
-    if (creatorCore.PredefinedThemes) {
-        // This is the official way to register themes in v2
-        uniqueThemes.forEach(t => {
-            try {
-                // Check if already exists to avoid duplicates
-                if (!creatorCore.PredefinedThemes.themes.some(existing => existing.themeName === t.themeName && existing.colorPalette === t.colorPalette)) {
-                    creatorCore.PredefinedThemes.add(t);
-                }
-            } catch (e) { }
+    // 2. Discover themes for our own lookup/initialization fallback
+    const allThemes = [];
+    if (window.SurveyTheme) {
+        Object.keys(window.SurveyTheme).forEach(key => {
+            const t = window.SurveyTheme[key];
+            if (t && t.themeName && t.cssVariables) allThemes.push(t);
         });
-
-        // Also force the list to be what we discovered
-        creatorCore.PredefinedThemes.themes = uniqueThemes;
     }
 
     // 3. Create Creator
@@ -227,15 +168,9 @@ function render_builder_v2($container, survey_id) {
         console.warn("Could not set serializer properties", e);
     }
 
-    // 4. Force unique themes into the instance
+    // 4. Final Creator Model Tweaks
+    // Allow Theme discovery in the UI
     if (creator.themeEditor) {
-        creator.themeEditor.themes = uniqueThemes;
-        if (creator.themeEditor.availableThemes) {
-            // Ensure names are unique
-            const names = Array.from(new Set(uniqueThemes.map(t => t.themeName)));
-            creator.themeEditor.availableThemes = names;
-        }
-
         if (creator.themeEditor.onThemesChanged) {
             creator.themeEditor.onThemesChanged();
         }
@@ -259,14 +194,13 @@ function render_builder_v2($container, survey_id) {
         document.head.appendChild(style);
     }
 
-    console.log("Creator: Themes initialized", creator.themeEditor ? creator.themeEditor.themes.length : "N/A");
+    console.log("Creator: Themes registered");
 
     const app = Vue.createApp({
         setup() { return { creator }; },
         template: '<SurveyCreatorComponent :model="creator" />'
     });
 
-    // Try all known component names for the creator in v2
     const scv = window.SurveyCreatorVue || {};
     const component = scv.SurveyCreatorComponent ||
         scv.SurveyCreator ||
@@ -305,63 +239,86 @@ function render_builder_v2($container, survey_id) {
 
                 creator.JSON = data;
 
-                // COMPREHENSIVE THEME SYNC (V2)
+                // Sync Function for Theme Application
                 const applyFullTheme = (themeObj) => {
                     if (!themeObj) return;
-                    console.log("Applying Theme Object:", themeObj.themeName || "Custom");
+                    console.log("Applying theme:", themeObj.themeName || "Custom");
 
-                    // 1. Update the Model (Handles Designer Tab & CSS Variables)
                     creator.theme = themeObj;
 
-                    // 2. Force update on the Theme Editor's internal survey
                     if (creator.themeEditor && creator.themeEditor.survey) {
                         creator.themeEditor.survey.applyTheme(themeObj);
+                        creator.themeEditor.survey.setDesignMode(true);
                     }
-
-                    // 3. Notify the UI to refresh palettes
                     if (creator.themeEditor && creator.themeEditor.onThemesChanged) {
                         creator.themeEditor.onThemesChanged();
                     }
                 };
 
-                // Unlock sequence for Theme Editor
+                // Unlock for interactivity
                 const unlock = () => {
+                    // console.log("Unlocking Builder/Theme Editor components...");
                     creator.readOnly = false;
-                    if (creator.themeEditor) {
-                        creator.themeEditor.readOnly = false;
-                        if (creator.themeEditor.themeModel) creator.themeEditor.themeModel.readOnly = false;
-                        if (creator.themeEditor.survey) {
-                            creator.themeEditor.survey.readOnly = false;
-                            creator.themeEditor.survey.setDesignMode(true);
-                        }
-                        // Keep registries synced
-                        if (!creator.themeEditor.themes || creator.themeEditor.themes.length < uniqueThemes.length) {
-                            creator.themeEditor.themes = uniqueThemes;
-                            creator.themeEditor.availableThemes = Array.from(new Set(uniqueThemes.map(t => t.themeName)));
-                        }
+
+                    if (creator.themeEditor && creator.themeEditor.survey) {
+                        creator.themeEditor.survey.readOnly = false;
+                        creator.themeEditor.survey.setDesignMode(true);
                     }
+
+                    // Unlock the Property Grid (sidebar) specifically for V2
+                    if (creator.propertyGrid && creator.propertyGrid.survey) {
+                        const pgSurvey = creator.propertyGrid.survey;
+                        pgSurvey.readOnly = false;
+                        pgSurvey.getAllQuestions().forEach(q => {
+                            q.readOnly = false;
+                            q.enabled = true;
+                            try { q.setPropertyValue("readOnly", false); } catch (e) { }
+                        });
+                    }
+
+                    if (creator.toolbox) creator.toolbox.readOnly = false;
                 };
 
-                creator.onPropertyChanged.add((sender, options) => {
-                    if (options.name === "theme") {
-                        const val = sender.theme;
-                        if (typeof val === "string") {
-                            const full = uniqueThemes.find(t => t.themeName === val);
-                            if (full) applyFullTheme(full);
-                        } else {
-                            applyFullTheme(val);
+                // Safely handle events to avoid "Cannot read properties of undefined (reading 'add')"
+                if (creator.onThemeChanged) {
+                    creator.onThemeChanged.add((sender, options) => {
+                        if (creator.themeEditor && creator.themeEditor.survey) {
+                            creator.themeEditor.survey.applyTheme(sender.theme);
                         }
-                    }
-                });
+                    });
+                } else {
+                    // Fallback for V2: monitor theme property changes
+                    creator.onPropertyChanged.add((sender, options) => {
+                        if (options.name === "theme") {
+                            if (creator.themeEditor && creator.themeEditor.survey) {
+                                creator.themeEditor.survey.applyTheme(options.newValue);
+                            }
+                        }
+                    });
+                }
 
-                // Initialize theme (priority: JSON > Fallback)
-                let initialTheme = data.theme || uniqueThemes.find(t => t.themeName === "defaultV2" || t.themeName === "default" || t.themeName === "modern") || uniqueThemes[0];
+                if (creator.onActiveTabChanged) {
+                    creator.onActiveTabChanged.add((sender, options) => {
+                        setTimeout(unlock, 100);
+                        setTimeout(unlock, 1000);
+                    });
+                }
 
-                setTimeout(() => {
-                    if (initialTheme) applyFullTheme(initialTheme);
-                    unlock();
-                    [500, 1500, 3000].forEach(ms => setTimeout(unlock, ms));
-                }, 500);
+                // Init Theme
+                let initialTheme = data.theme;
+                if (!initialTheme && allThemes.length > 0) {
+                    initialTheme = allThemes.find(t => t.themeName === "defaultV2") || allThemes.find(t => t.themeName === "default") || allThemes[0];
+                }
+
+                if (initialTheme) {
+                    setTimeout(() => {
+                        applyFullTheme(initialTheme);
+                        unlock();
+                    }, 500);
+                }
+
+                // Final unlock sequence
+                [1500, 3000].forEach(ms => setTimeout(unlock, ms));
             }
         }
     });
@@ -381,14 +338,14 @@ function render_builder_v2($container, survey_id) {
             callback: (r) => {
                 callback(saveNo, !r.exc);
                 if (!r.exc) {
-                    frappe.show_alert({ message: __('Saved Content and Theme'), indicator: 'green' });
+                    frappe.show_alert({ message: __('Saved Survey and Theme'), indicator: 'green' });
                 }
             }
         });
     };
 
-    // Also bind theme changes to auto-save if enabled
     creator.saveThemeFunc = (saveNo, callback) => {
+        console.log("Auto-saving theme change...");
         creator.saveSurveyFunc(saveNo, callback);
     };
 }
