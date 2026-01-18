@@ -12,20 +12,21 @@ frappe.pages['survey_dashboard'].on_page_load = function (wrapper) {
 
     const assets = [
         'https://unpkg.com/vue@3/dist/vue.global.prod.js',
-        'https://unpkg.com/survey-core@2.5.11/survey-core.min.css',
-        'https://unpkg.com/survey-core@2.5.11/survey.core.min.js',
-        'https://unpkg.com/survey-core@2.5.11/themes/index.min.js',
-        'https://unpkg.com/survey-vue3-ui@2.5.11/survey-vue3-ui.umd.js',
-        'https://unpkg.com/survey-creator-core@2.5.11/survey-creator-core.min.css',
-        'https://unpkg.com/survey-creator-core@2.5.11/survey-creator-core.min.js',
-        'https://unpkg.com/survey-creator-vue@2.5.11/survey-creator-vue.umd.js',
+        'https://unpkg.com/survey-core@2.5.6/survey-core.min.css',
+        'https://unpkg.com/survey-core@2.5.6/survey.core.min.js',
+        'https://unpkg.com/survey-core@2.5.6/themes/index.min.js',
+        'https://unpkg.com/survey-vue3-ui@2.5.6/survey-vue3-ui.umd.js',
+        'https://unpkg.com/survey-creator-core@2.5.6/survey-creator-core.min.css',
+        'https://unpkg.com/survey-creator-core@2.5.6/survey-creator-core.min.js',
+        'https://unpkg.com/survey-creator-vue@2.5.6/survey-creator-vue.umd.js',
         'https://unpkg.com/plotly.js-dist-min/plotly.min.js',
-        'https://unpkg.com/survey-analytics@2.5.11/survey.analytics.min.css',
-        'https://unpkg.com/survey-analytics@2.5.11/survey.analytics.min.js'
+        'https://unpkg.com/survey-analytics@2.5.6/survey.analytics.min.css',
+        'https://unpkg.com/survey-analytics@2.5.6/survey.analytics.min.js'
     ];
 
     load_assets_sequentially(assets, function () {
-        // High-level global aliasing for V2 cross-compatibility
+        // Compatibility Fix: SurveyJS v2 UMD sometimes expects SurveyVue to be available
+        // on window for the CreatorVue to attach its ComponentFactory.
         window.Survey = window.Survey || window.surveyCore || {};
         window.SurveyVue = window.SurveyVue || window.Survey;
         window.SurveyCreatorCore = window.SurveyCreatorCore || window.surveyCreatorCore || {};
@@ -166,8 +167,7 @@ function render_builder_v2($container, survey_id) {
         uniqueThemes.push(window.SurveyTheme.DefaultV2 || window.SurveyTheme.Default);
     }
 
-    console.log(`SurveyJS 2.5.11: Discovered ${uniqueThemes.length} unique themes.`);
-
+    console.log(`SurveyJS 2.5.6: Discovered ${uniqueThemes.length} unique themes.`);
 
 
     // 2. Register Themes Globally
