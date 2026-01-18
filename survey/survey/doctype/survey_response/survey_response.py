@@ -1,6 +1,7 @@
 import frappe
 from frappe.model.document import Document
 
+
 class SurveyResponse(Document):
 	def after_insert(self):
 		self.update_survey_stats()
