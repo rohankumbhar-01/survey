@@ -12,23 +12,24 @@ frappe.pages['survey_dashboard'].on_page_load = function (wrapper) {
 
     const assets = [
         'https://unpkg.com/vue@3/dist/vue.global.prod.js',
-        'https://unpkg.com/survey-core@2.5.6/survey-core.min.css',
-        'https://unpkg.com/survey-core@2.5.6/survey.core.min.js',
-        'https://unpkg.com/survey-core@2.5.6/themes/index.min.js',
-        'https://unpkg.com/survey-vue3-ui@2.5.6/survey-vue3-ui.umd.js',
-        'https://unpkg.com/survey-creator-core@2.5.6/survey-creator-core.min.css',
-        'https://unpkg.com/survey-creator-core@2.5.6/survey-creator-core.min.js',
-        'https://unpkg.com/survey-creator-vue@2.5.6/survey-creator-vue.umd.js',
+        'https://unpkg.com/survey-core@2.5.11/survey-core.min.css',
+        'https://unpkg.com/survey-core@2.5.11/survey.core.min.js',
+        'https://unpkg.com/survey-core@2.5.11/themes/index.min.js',
+        'https://unpkg.com/survey-vue3-ui@2.5.11/survey-vue3-ui.umd.js',
+        'https://unpkg.com/survey-creator-core@2.5.11/survey-creator-core.min.css',
+        'https://unpkg.com/survey-creator-core@2.5.11/survey-creator-core.min.js',
+        'https://unpkg.com/survey-creator-vue@2.5.11/survey-creator-vue.umd.js',
         'https://unpkg.com/plotly.js-dist-min/plotly.min.js',
-        'https://unpkg.com/survey-analytics@2.5.6/survey.analytics.min.css',
-        'https://unpkg.com/survey-analytics@2.5.6/survey.analytics.min.js'
+        'https://unpkg.com/survey-analytics@2.5.11/survey.analytics.min.css',
+        'https://unpkg.com/survey-analytics@2.5.11/survey.analytics.min.js'
     ];
 
     load_assets_sequentially(assets, function () {
-        // Compatibility Fix: SurveyJS v2 UMD sometimes expects SurveyVue to be available
-        // on window for the CreatorVue to attach its ComponentFactory.
+        // High-level global aliasing for V2 cross-compatibility
+        window.Survey = window.Survey || window.surveyCore || {};
         window.SurveyVue = window.SurveyVue || window.Survey;
-        window.Survey = window.Survey || window.SurveyVue;
+        window.SurveyCreatorCore = window.SurveyCreatorCore || window.surveyCreatorCore || {};
+        window.SurveyTheme = window.SurveyTheme || window.surveyTheme || {};
 
         window.survey_v2_loaded = true;
         handle_routing(wrapper);
@@ -165,7 +166,8 @@ function render_builder_v2($container, survey_id) {
         uniqueThemes.push(window.SurveyTheme.DefaultV2 || window.SurveyTheme.Default);
     }
 
-    console.log(`SurveyJS 2.5.6: Discovered ${uniqueThemes.length} unique themes.`);
+    console.log(`SurveyJS 2.5.11: Discovered ${uniqueThemes.length} unique themes.`);
+
 
 
     // 2. Register Themes Globally
@@ -316,6 +318,7 @@ function render_builder_v2($container, survey_id) {
                     // 2. Force update on the Theme Editor's internal survey
                     if (creator.themeEditor && creator.themeEditor.survey) {
                         creator.themeEditor.survey.applyTheme(themeObj);
+                        creator.themeEditor.survey.setDesignMode(true);
                     }
 
                     // 3. Notify the UI to refresh palettes
@@ -324,9 +327,11 @@ function render_builder_v2($container, survey_id) {
                     }
                 };
 
-                // Unlock sequence for Theme Editor
+                // Aggressive Unlock for V2 (Prevents Frozen Buttons)
                 const unlock = () => {
                     creator.readOnly = false;
+                    creator.isComplexPropertyAllowed = true;
+
                     if (creator.themeEditor) {
                         creator.themeEditor.readOnly = false;
                         if (creator.themeEditor.themeModel) creator.themeEditor.themeModel.readOnly = false;
@@ -334,11 +339,28 @@ function render_builder_v2($container, survey_id) {
                             creator.themeEditor.survey.readOnly = false;
                             creator.themeEditor.survey.setDesignMode(true);
                         }
-                        // Keep registries synced
-                        if (!creator.themeEditor.themes || creator.themeEditor.themes.length < uniqueThemes.length) {
-                            creator.themeEditor.themes = uniqueThemes;
-                            creator.themeEditor.availableThemes = Array.from(new Set(uniqueThemes.map(t => t.themeName)));
-                        }
+                    }
+
+                    // Unlock the Property Grid survey (the major source of "frozen" behavior)
+                    if (creator.propertyGrid && creator.propertyGrid.survey) {
+                        const pgSurvey = creator.propertyGrid.survey;
+                        pgSurvey.readOnly = false;
+                        pgSurvey.getAllQuestions().forEach(q => {
+                            q.readOnly = false;
+                            q.enabled = true;
+                            try { q.setPropertyValue("readOnly", false); } catch (e) { }
+                        });
+                    }
+
+                    // Unlock Toolbox
+                    if (creator.toolbox) {
+                        creator.toolbox.readOnly = false;
+                    }
+
+                    // Keep registries synced
+                    if (creator.themeEditor && (!creator.themeEditor.themes || creator.themeEditor.themes.length < uniqueThemes.length)) {
+                        creator.themeEditor.themes = uniqueThemes;
+                        creator.themeEditor.availableThemes = Array.from(new Set(uniqueThemes.map(t => t.themeName)));
                     }
                 };
 
@@ -352,6 +374,16 @@ function render_builder_v2($container, survey_id) {
                             applyFullTheme(val);
                         }
                     }
+                    // Re-unlock if anything tries to lock
+                    if (options.name === "readOnly" && options.newValue === true) {
+                        setTimeout(unlock, 10);
+                    }
+                });
+
+                // Tab change sync
+                creator.onActiveTabChanged.add(() => {
+                    setTimeout(unlock, 100);
+                    setTimeout(unlock, 1000);
                 });
 
                 // Initialize theme (priority: JSON > Fallback)
