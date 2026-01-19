@@ -29,7 +29,7 @@ def get_survey_form(survey_id):
 
 
 @frappe.whitelist(allow_guest=True)
-def submit_survey_response(survey_id, response_json):
+def submit_survey_response(survey_id, response_json, reference_doctype=None, reference_docname=None):
 	if isinstance(response_json, str):
 		response_json = json.loads(response_json)
 
@@ -42,6 +42,8 @@ def submit_survey_response(survey_id, response_json):
 		{
 			"doctype": "Survey Response",
 			"survey_form": survey_id,
+			"reference_doctype": reference_doctype,
+			"reference_docname": reference_docname,
 			"response_json": json.dumps(response_json),
 			"responded_on": frappe.utils.now_datetime(),
 			"respondent_user": frappe.session.user if frappe.session.user != "Guest" else None,
