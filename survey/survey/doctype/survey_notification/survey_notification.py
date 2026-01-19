@@ -108,14 +108,23 @@ class SurveyNotification(Document):
 						if df and df.fieldtype == "Link":
 							linked_doctype = df.options
 							if email_id:
-								# Find contacts linked to this document
-								contacts = frappe.get_all("Contact", 
-									filters={"dynamic_links.link_doctype": linked_doctype, "dynamic_links.link_name": email_id},
-									fields=["email_id"]
+								# Find contacts linked to this document via Dynamic Link child table
+								contact_names = frappe.get_all("Dynamic Link", 
+									filters={
+										"link_doctype": linked_doctype, 
+										"link_name": email_id, 
+										"parenttype": "Contact"
+									},
+									pluck="parent"
 								)
-								for c in contacts:
-									if c.email_id and validate_email_address(c.email_id):
-										recipients.append(c.email_id)
+								if contact_names:
+									contacts = frappe.get_all("Contact",
+										filters={"name": ["in", contact_names]},
+										fields=["email_id"]
+									)
+									for c in contacts:
+										if c.email_id and validate_email_address(c.email_id):
+											recipients.append(c.email_id)
 					elif frappe.db.exists("User", email_id):
 						# If it's a User link, get their email
 						user_email = frappe.db.get_value("User", email_id, "email")
