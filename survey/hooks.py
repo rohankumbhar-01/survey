@@ -141,34 +141,19 @@ website_route_rules = [
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"*": {
+		"after_insert": "survey.survey.doctype.survey_notification.survey_notification.trigger_notifications",
+		"on_update": "survey.survey.doctype.survey_notification.survey_notification.trigger_notifications",
+		"on_submit": "survey.survey.doctype.survey_notification.survey_notification.trigger_notifications",
+		"on_cancel": "survey.survey.doctype.survey_notification.survey_notification.trigger_notifications",
+		"on_change": "survey.survey.doctype.survey_notification.survey_notification.trigger_notifications",
+	}
+}
 
-# Scheduled Tasks
-# ---------------
-
-# scheduler_events = {
-# 	"all": [
-# 		"survey.tasks.all"
-# 	],
-# 	"daily": [
-# 		"survey.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"survey.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"survey.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"survey.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"daily": ["survey.survey.doctype.survey_notification.survey_notification.trigger_daily_alerts"]
+}
 
 # Testing
 # -------

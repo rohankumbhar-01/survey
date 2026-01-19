@@ -78,6 +78,10 @@
                         survey.applyTheme(fallback);
                     }
 
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const referenceDoctype = urlParams.get('reference_doctype');
+                    const referenceDocname = urlParams.get('reference_docname');
+
                     survey.onComplete.add(function (sender) {
                         fetch('/api/method/survey.survey.api.survey.submit_survey_response', {
                             method: 'POST',
@@ -87,7 +91,9 @@
                             },
                             body: JSON.stringify({
                                 survey_id: surveyId,
-                                response_json: sender.data
+                                response_json: sender.data,
+                                reference_doctype: referenceDoctype,
+                                reference_docname: referenceDocname
                             })
                         }).then(res => res.json())
                             .then(resp => {

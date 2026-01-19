@@ -7,6 +7,8 @@
     "engine": "InnoDB",
     "field_order": [
         "survey_form",
+        "reference_doctype",
+        "reference_docname",
         "responded_on",
         "respondent_user",
         "cb_1",
@@ -24,6 +26,17 @@
             "label": "Survey Form",
             "options": "Survey Form",
             "reqd": 1
+        },
+        {
+            "fieldname": "reference_doctype",
+            "fieldtype": "Link",
+            "label": "Reference DocType",
+            "options": "DocType"
+        },
+        {
+            "fieldname": "reference_docname",
+            "fieldtype": "Data",
+            "label": "Reference DocName"
         },
         {
             "fieldname": "responded_on",
