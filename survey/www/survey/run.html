@@ -2,7 +2,7 @@
 
 {% block content %}
 <!-- Forced CSS loading to bypass header stripping -->
-<link rel="stylesheet" href="https://unpkg.com/survey-core@2.5.6/survey-core.min.css">
+<link rel="stylesheet" href="/assets/survey/vendor/surveyjs/survey-core.min.css">
 
 <style>
     /* Ensure the survey fills the container and respects theme styles */
@@ -37,10 +37,10 @@
     <div id="surveyElement"></div>
 </div>
 
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="https://unpkg.com/survey-core@2.5.6/survey.core.min.js"></script>
-<script src="https://unpkg.com/survey-core@2.5.6/themes/index.min.js"></script>
-<script src="https://unpkg.com/survey-vue3-ui@2.5.6/survey-vue3-ui.umd.js"></script>
+<script src="/assets/survey/vendor/surveyjs/vue.global.prod.js"></script>
+<script src="/assets/survey/vendor/surveyjs/survey.core.min.js"></script>
+<script src="/assets/survey/vendor/surveyjs/survey-themes.min.js"></script>
+<script src="/assets/survey/vendor/surveyjs/survey-vue3-ui.umd.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -78,6 +78,10 @@
                         survey.applyTheme(fallback);
                     }
 
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const referenceDoctype = urlParams.get('reference_doctype');
+                    const referenceDocname = urlParams.get('reference_docname');
+
                     survey.onComplete.add(function (sender) {
                         fetch('/api/method/survey.survey.api.survey.submit_survey_response', {
                             method: 'POST',
@@ -87,7 +91,9 @@
                             },
                             body: JSON.stringify({
                                 survey_id: surveyId,
-                                response_json: sender.data
+                                response_json: sender.data,
+                                reference_doctype: referenceDoctype,
+                                reference_docname: referenceDocname
                             })
                         }).then(res => res.json())
                             .then(resp => {
