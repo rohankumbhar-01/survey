@@ -13,17 +13,17 @@ frappe.pages["survey_dashboard"].on_page_load = function (wrapper) {
 	);
 
 	const assets = [
-		"https://unpkg.com/vue@3/dist/vue.global.prod.js",
-		"https://unpkg.com/survey-core@2.5.6/survey-core.min.css",
-		"https://unpkg.com/survey-core@2.5.6/survey.core.min.js",
-		"https://unpkg.com/survey-core@2.5.6/themes/index.min.js",
-		"https://unpkg.com/survey-vue3-ui@2.5.6/survey-vue3-ui.umd.js",
-		"https://unpkg.com/survey-creator-core@2.5.6/survey-creator-core.min.css",
-		"https://unpkg.com/survey-creator-core@2.5.6/survey-creator-core.min.js",
-		"https://unpkg.com/survey-creator-vue@2.5.6/survey-creator-vue.umd.js",
-		"https://unpkg.com/plotly.js-dist-min/plotly.min.js",
-		"https://unpkg.com/survey-analytics@2.5.6/survey.analytics.min.css",
-		"https://unpkg.com/survey-analytics@2.5.6/survey.analytics.min.js",
+		"/assets/survey/vendor/surveyjs/vue.global.prod.js",
+		"/assets/survey/vendor/surveyjs/survey-core.min.css",
+		"/assets/survey/vendor/surveyjs/survey.core.min.js",
+		"/assets/survey/vendor/surveyjs/survey-themes.min.js",
+		"/assets/survey/vendor/surveyjs/survey-vue3-ui.umd.js",
+		"/assets/survey/vendor/surveyjs/survey-creator-core.min.css",
+		"/assets/survey/vendor/surveyjs/survey-creator-core.min.js",
+		"/assets/survey/vendor/surveyjs/survey-creator-vue.umd.js",
+		"/assets/survey/vendor/surveyjs/plotly.min.js",
+		"/assets/survey/vendor/surveyjs/survey.analytics.min.css",
+		"/assets/survey/vendor/surveyjs/survey.analytics.min.js",
 	];
 
 	load_assets_sequentially(assets, function () {
@@ -62,7 +62,7 @@ function load_assets_sequentially(assets, callback) {
 				window.SurveyVue = window.SurveyVue || window.Survey;
 				window.Survey = window.Survey || window.SurveyVue;
 			}
-			if (item.includes("themes/index.min.js")) {
+			if (item.includes("survey-themes.min.js")) {
 				window.SurveyTheme = window.SurveyTheme || window.surveyTheme;
 			}
 			if (item.includes("survey-creator-core")) {
@@ -473,8 +473,8 @@ function render_analysis($container, survey_id) {
 						console.error("Analysis: Render crash", e);
 						$(summaryEl).html(
 							'<div class="alert alert-danger">Error rendering analytics: ' +
-								e.message +
-								"</div>"
+							e.message +
+							"</div>"
 						);
 					}
 
