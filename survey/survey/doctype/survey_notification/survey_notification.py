@@ -80,30 +80,49 @@ class SurveyNotification(Document):
 				if not frappe.safe_eval(recipient.condition, None, context):
 					continue
 			
-			# 1. Receiver by Document Field (Standard)
+			# 1. Receiver by Document Field (Standard + Child Table support)
 			if recipient.receiver_by_document_field:
-				email_id = doc.get(recipient.receiver_by_document_field)
-				if validate_email_address(email_id):
-					recipients.append(email_id)
+				fieldname = recipient.receiver_by_document_field
+				email_ids = []
 				
-				# 2. Smart Recipient Resolution (Custom)
-				if recipient.fetch_from_contact:
-					meta = frappe.get_meta(doc.doctype)
-					df = meta.get_field(recipient.receiver_by_document_field)
-					if df and df.fieldtype == "Link":
-						linked_doctype = df.options
-						linked_name = doc.get(recipient.receiver_by_document_field)
-						if linked_name:
-							# Find contacts linked to this document
-							contacts = frappe.get_all("Contact", 
-								filters={"dynamic_links.link_doctype": linked_doctype, "dynamic_links.link_name": linked_name},
-								fields=["email_id"]
-							)
-							for c in contacts:
-								if c.email_id and validate_email_address(c.email_id):
-									recipients.append(c.email_id)
+				if "," in fieldname:
+					fieldname, parentfield = fieldname.split(",")
+					for row in doc.get(parentfield):
+						email_ids.append(row.get(fieldname))
+				else:
+					email_ids.append(doc.get(fieldname))
 
-			# 3. Receiver by Role (Standard)
+				for email_id in email_ids:
+					if not email_id: continue
+					
+					if validate_email_address(email_id):
+						recipients.append(email_id)
+					elif recipient.fetch_from_contact:
+						# Custom Smart Resolution for Link fields
+						meta = frappe.get_meta(doc.doctype)
+						# If it's a child table field, get meta of child
+						if "," in recipient.receiver_by_document_field:
+							meta = frappe.get_meta(doc.get(recipient.receiver_by_document_field.split(",")[1])[0].doctype)
+						
+						df = meta.get_field(fieldname)
+						if df and df.fieldtype == "Link":
+							linked_doctype = df.options
+							if email_id:
+								# Find contacts linked to this document
+								contacts = frappe.get_all("Contact", 
+									filters={"dynamic_links.link_doctype": linked_doctype, "dynamic_links.link_name": email_id},
+									fields=["email_id"]
+								)
+								for c in contacts:
+									if c.email_id and validate_email_address(c.email_id):
+										recipients.append(c.email_id)
+					elif frappe.db.exists("User", email_id):
+						# If it's a User link, get their email
+						user_email = frappe.db.get_value("User", email_id, "email")
+						if validate_email_address(user_email):
+							recipients.append(user_email)
+
+			# 2. Receiver by Role (Standard)
 			if recipient.receiver_by_role:
 				emails = get_info_based_on_role(recipient.receiver_by_role, "email", ignore_permissions=True)
 				for email in emails:
@@ -187,7 +206,6 @@ def trigger_notifications(doc, method=None):
 	event = event_map.get(method)
 	if not event:
 		return
-
 	# Load cached notifications for this doctype
 	def _get_notifications():
 		return frappe.get_all("Survey Notification", 
